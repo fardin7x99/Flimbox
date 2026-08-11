@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FilmBox - Watch Movies & Series</title>
+    
+    <!-- Tailwind CSS (for modern & super-fast styling utility classes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase Compatibility SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            background-color: #0b0816;
+            color: #ffffff;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #584cf4;
+            border-radius: 10px;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1b153a 0%, #0b0816 100%);
+        }
+        .purple-gradient {
+            background: linear-gradient(135deg, #584cf4 0%, #8338ec 100%);
+        }
+        .card-bg {
+            background: #17132c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .active-tab {
+            color: #584cf4;
+            transform: scale(1.1);
+        }
+        /* Prevent elastic bounce scroll on iOS */
+        html, body {
+            position: fixed;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        .app-container {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 80px; /* space for bottom nav */
+        }
+        /* Hide element default scrollbars */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="gradient-bg">
+
+    <!-- 1. AUTHENTICATION SCREEN (LOGIN / SIGNUP) -->
+    <div id="auth-screen" class="fixed inset-0 z-50 flex flex-col justify-between p-6 bg-[#0b0816] hidden">
+        <!-- Auth Header -->
+        <div class="flex items-center justify-between w-full pt-4">
+            <button id="skip-auth-btn" class="text-sm font-medium text-gray-400 hover:text-white transition">
+                Skip Login <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text purple-gradient">FilmBox</h1>
+        </div>
+
+        <!-- Auth Forms Box -->
+        <div class="w-full max-w-md mx-auto my-auto card-bg p-6 rounded-2xl shadow-2xl">
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-800 mb-6">
+                <button id="tab-login" class="flex-1 py-2 text-center font-semibold text-white border-b-2 border-[#584cf4]">Login</button>
+                <button id="tab-signup" class="flex-1 py-2 text-center font-semibold text-gray-400 border-b-0">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">GMAIL ADDRESS</label>
+                    <input type="email" id="login-email" required placeholder="example@gmail.com" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#584cf4]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">PASSWORD</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#584cf4]">
+                </div>
+                <button type="submit" class="w-full purple-gradient py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:opacity-90 active:scale-[0.98] transition">Sign In</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">FULL NAME</label>
+                    <input type="text" id="signup-name" required placeholder="John Doe" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#584cf4]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">GMAIL ADDRESS</label>
+                    <input type="email" id="signup-email" required placeholder="yourname@gmail.com" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#584cf4]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">PASSWORD</label>
+                    <input type="password" id="signup-password" required placeholder="••••••••" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#584cf4]">
+                </div>
+                <button type="submit" class="w-full purple-gradient py-3.5 rounded-xl font-semibold text-sm shadow-lg hover:opacity-90 active:scale-[0.98] transition">Create Account</button>
+            </form>
+        </div>
+
+        <div class="text-center text-xs text-gray-500 pb-4">
+            By continuing, you agree to our Terms and Conditions.
+        </div>
+    </div>
+
+
+    <!-- MAIN SITE HEADER (Shows at top, hides on scroll down dynamically inside JS) -->
+    <header id="main-header" class="w-full flex items-center justify-between px-6 py-4 fixed top-0 left-0 right-0 z-40 bg-[#0b0816]/90 backdrop-blur-md transition-transform duration-300">
+        <div id="header-user-info" class="flex items-center space-x-3">
+            <div id="header-avatar" class="w-8 h-8 rounded-full purple-gradient flex items-center justify-center font-bold text-sm text-white">G</div>
+            <span id="header-greeting" class="text-xs font-medium text-gray-400">Loading...</span>
+        </div>
+        <h1 class="text-xl font-bold text-transparent bg-clip-text purple-gradient">FilmBox</h1>
+    </header>
+
+
+    <!-- VIEWPORT CONTENT WRAPPER -->
+    <div id="app-viewport" class="app-container pt-16">
+
+        <!-- A. HOME VIEW -->
+        <div id="home-view" class="view-section px-4 space-y-6">
+            <!-- Dynamic Banner Slider -->
+            <div class="relative w-full h-44 rounded-2xl overflow-hidden mt-2 shadow-xl">
+                <div id="banner-container" class="w-full h-full relative transition-all duration-700">
+                    <!-- Dynamic Banners will render here -->
+                    <div class="absolute inset-0 bg-[#17132c] flex items-center justify-center text-sm text-gray-500">No Banners Loaded</div>
+                </div>
+                <!-- Banner Indicator Dots -->
+                <div id="banner-dots" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-1.5 z-10"></div>
+            </div>
+
+            <!-- Categories Slider -->
+            <div class="space-y-2">
+                <h3 class="text-sm font-semibold tracking-wider text-gray-400 uppercase">Categories</h3>
+                <div id="categories-slider" class="flex space-x-3 overflow-x-auto no-scrollbar py-1">
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#584cf4] text-white whitespace-nowrap transition-all" data-category="All">All</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Action">Action</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Comedy">Comedy</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Drama">Drama</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Romance">Romance</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Horror">Horror</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Crime">Crime</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Animation">Animation</button>
+                    <button class="cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all" data-category="Web Series">Web Series</button>
+                </div>
+            </div>
+
+            <!-- Movies 2-Column Poster Grid -->
+            <div class="space-y-3">
+                <h3 class="text-sm font-semibold tracking-wider text-gray-400 uppercase">Featured Content</h3>
+                <div id="movies-grid" class="grid grid-cols-2 gap-4">
+                    <!-- Dynamic Movies will render here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- B. FAVORITES VIEW -->
+        <div id="favorites-view" class="view-section px-4 space-y-6 hidden">
+            <!-- Search Bar -->
+            <div class="relative w-full mt-2">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="search-input" placeholder="Search movies, series..." class="w-full bg-[#17132c] border border-gray-800 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#584cf4] placeholder-gray-500">
+            </div>
+
+            <div class="space-y-3">
+                <h3 id="favorites-title" class="text-sm font-semibold tracking-wider text-gray-400 uppercase">My Saved List</h3>
+                <div id="favorites-grid" class="grid grid-cols-2 gap-4">
+                    <!-- Favorited and Searched elements go here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- C. PROFILE VIEW -->
+        <div id="profile-view" class="view-section px-4 space-y-6 hidden">
+            <!-- Profile Info Card -->
+            <div id="profile-card" class="card-bg rounded-2xl p-6 flex flex-col items-center text-center space-y-3 mt-2">
+                <div id="profile-avatar" class="w-20 h-20 rounded-full purple-gradient flex items-center justify-center font-bold text-3xl text-white shadow-lg">?</div>
+                <div>
+                    <h2 id="profile-username" class="text-lg font-bold">Guest User</h2>
+                    <p id="profile-email" class="text-xs text-gray-400">Please sign in to save data online</p>
+                </div>
+            </div>
+
+            <!-- Settings Links List -->
+            <div class="card-bg rounded-2xl overflow-hidden divide-y divide-gray-800">
+                <a id="link-community" href="#" target="_blank" class="flex items-center justify-between px-5 py-4 hover:bg-white/5 transition text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-users text-[#584cf4] text-lg"></i> <span>Join Community Group</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </a>
+                <a id="link-app" href="#" target="_blank" class="flex items-center justify-between px-5 py-4 hover:bg-white/5 transition text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-download text-[#584cf4] text-lg"></i> <span>Download Official App</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </a>
+                <button onclick="switchTab('favorites')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-heart text-[#584cf4] text-lg"></i> <span>My Favorites</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </button>
+                <button onclick="alert('Watch History is cleared!')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-clock-rotate-left text-[#584cf4] text-lg"></i> <span>Clear Watch History</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </button>
+                <button onclick="promptAdmin()" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-lock text-red-500 text-lg"></i> <span>Admin Panel</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </button>
+                <button onclick="alert('Settings configured successfully.')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-sliders text-[#584cf4] text-lg"></i> <span>Settings</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </button>
+                <button onclick="alert('FilmBox v1.0.0 - Free Movie Streaming Platform.')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-circle-info text-[#584cf4] text-lg"></i> <span>About Us</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </button>
+                <button onclick="alert('Your privacy is highly valued. We do not sell your personal data.')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-shield-halved text-[#584cf4] text-lg"></i> <span>Privacy Policy</span></span>
+                    <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                </button>
+                <button id="logout-btn" class="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 text-left text-sm text-red-400">
+                    <span class="flex items-center space-x-3"><i class="fa-solid fa-right-from-bracket text-lg"></i> <span id="logout-text">Login/Register</span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- D. MOVIE DETAILS VIEW (Drawn on overlay/dynamic page shift) -->
+        <div id="details-view" class="view-section px-4 space-y-6 hidden">
+            <!-- Top Controls -->
+            <div class="flex items-center justify-between mt-2">
+                <button onclick="switchTab('home')" class="w-10 h-10 rounded-full bg-[#17132c] flex items-center justify-center text-white"><i class="fa-solid fa-arrow-left"></i></button>
+                <h3 class="text-sm font-semibold tracking-wider text-gray-400">Movie Details</h3>
+                <button id="details-share" class="w-10 h-10 rounded-full bg-[#17132c] flex items-center justify-center text-white"><i class="fa-solid fa-share-nodes"></i></button>
+            </div>
+
+            <!-- Movie Info Header Area -->
+            <div class="relative w-full rounded-2xl overflow-hidden aspect-[16/9] shadow-xl bg-black">
+                <img id="details-poster" src="" alt="Movie Poster" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0b0816] via-transparent to-transparent"></div>
+            </div>
+
+            <!-- Title & Rating Info -->
+            <div class="space-y-2">
+                <h1 id="details-title" class="text-2xl font-bold">Movie Title</h1>
+                <div class="flex items-center space-x-4 text-xs font-semibold text-gray-400">
+                    <span><i class="fa-solid fa-star text-amber-500 mr-1"></i> <span id="details-rating">0.0</span></span>
+                    <span><i class="fa-solid fa-eye text-[#584cf4] mr-1"></i> <span id="details-views">0</span> Views</span>
+                    <span id="details-category-badge" class="px-2.5 py-1 rounded-full bg-[#584cf4]/20 text-[#584cf4]">Action</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons Area -->
+            <div class="flex items-center space-x-4">
+                <button id="watch-now-btn" class="flex-1 purple-gradient py-4 rounded-xl font-bold shadow-lg flex items-center justify-center space-x-2 text-sm active:scale-[0.98] transition">
+                    <i class="fa-solid fa-play"></i> <span>Watch Now</span>
+                </button>
+                <button id="details-fav-btn" class="w-14 h-14 rounded-xl bg-[#17132c] border border-gray-800 flex items-center justify-center text-gray-400 text-lg hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-heart"></i>
+                </button>
+            </div>
+
+            <!-- ADSTERRA TIMER OVERLAY (Triggers on Watch Now) -->
+            <div id="ad-timer-overlay" class="hidden card-bg rounded-2xl p-6 text-center space-y-4 shadow-xl border border-yellow-500/20">
+                <div class="text-amber-500 text-3xl animate-bounce"><i class="fa-solid fa-clock"></i></div>
+                <div>
+                    <h4 class="font-bold text-base">Preparing Video Player...</h4>
+                    <p class="text-xs text-gray-400 mt-1">Please support us by looking at the sponsor page. Close the ad window and stay on this page to unlock the stream.</p>
+                </div>
+                <div class="text-2xl font-bold text-[#584cf4]" id="countdown-number">15s</div>
+                <div class="w-full bg-[#110e20] h-1.5 rounded-full overflow-hidden">
+                    <div id="countdown-progress" class="purple-gradient h-full w-0 transition-all duration-1000"></div>
+                </div>
+            </div>
+
+            <!-- CUSTOM VIDEO PLAYER (Reveals after countdown) -->
+            <div id="video-player-container" class="hidden space-y-2">
+                <h3 class="text-sm font-semibold tracking-wider text-gray-400">Video Player</h3>
+                <div class="relative w-full rounded-2xl overflow-hidden aspect-[16/9] bg-black shadow-2xl group" id="video-wrapper">
+                    <video id="main-video-element" class="w-full h-full object-contain" playsinline></video>
+                    
+                    <!-- Full-size invisible touch targets for double tap & hold -->
+                    <div id="video-touch-overlay" class="absolute inset-0 z-10 flex">
+                        <div id="touch-left" class="w-1/2 h-full"></div>
+                        <div id="touch-right" class="w-1/2 h-full relative">
+                            <!-- Long Press Speed Badge -->
+                            <div id="speed-badge" class="hidden absolute top-4 right-4 bg-black/80 px-3 py-1.5 rounded-full text-xs font-bold text-yellow-500 tracking-wide">
+                                2.0x Fast-Forwarding <i class="fa-solid fa-angles-right ml-1"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Player Controls Bar (Overlays on hover / touch) -->
+                    <div id="player-controls" class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 to-transparent p-3 space-y-2 opacity-100 md:opacity-0 transition-opacity duration-300">
+                        <!-- Progress Slider -->
+                        <div class="flex items-center space-x-2">
+                            <span id="vid-time-current" class="text-[10px] text-gray-300">00:00</span>
+                            <input type="range" id="vid-progress" min="0" max="100" value="0" class="flex-1 accent-[#584cf4] cursor-pointer bg-white/30 h-1 rounded-full outline-none">
+                            <span id="vid-time-duration" class="text-[10px] text-gray-300">00:00</span>
+                        </div>
+
+                        <!-- Main Buttons Grid -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <button id="vid-btn-play" class="text-white hover:text-[#584cf4] transition"><i class="fa-solid fa-play"></i></button>
+                                
+                                <!-- Custom Volume Slider -->
+                                <div class="flex items-center space-x-1.5">
+                                    <button id="vid-btn-mute" class="text-white text-xs hover:text-[#584cf4] transition"><i class="fa-solid fa-volume-high"></i></button>
+                                    <input type="range" id="vid-volume" min="0" max="1" step="0.1" value="1" class="w-12 accent-[#584cf4] bg-white/30 h-1 rounded-full outline-none">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <!-- Speed Multiplier Controller -->
+                                <div class="relative">
+                                    <button id="vid-btn-speed" class="text-xs font-semibold text-white bg-white/10 px-2 py-1 rounded hover:bg-white/20">1.0x</button>
+                                    <div id="speed-options" class="absolute bottom-8 right-0 bg-[#17132c] border border-gray-800 rounded-lg hidden flex-col py-1 text-xs w-16">
+                                        <button class="speed-opt py-1 hover:bg-white/10" data-speed="0.5">0.5x</button>
+                                        <button class="speed-opt py-1 hover:bg-white/10" data-speed="1.0">1.0x</button>
+                                        <button class="speed-opt py-1 hover:bg-white/10" data-speed="1.5">1.5x</button>
+                                        <button class="speed-opt py-1 hover:bg-white/10" data-speed="2.0">2.0x</button>
+                                    </div>
+                                </div>
+                                <button id="vid-btn-fullscreen" class="text-white hover:text-[#584cf4] transition"><i class="fa-solid fa-expand"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- E. ADMIN PANEL VIEW (Passcode Protected) -->
+        <div id="admin-view" class="view-section px-4 space-y-6 hidden">
+            <div class="flex items-center justify-between mt-2">
+                <h2 class="text-xl font-bold text-red-500">FilmBox Admin Console</h2>
+                <button onclick="switchTab('profile')" class="px-3 py-1.5 rounded-lg bg-gray-800 text-xs">Exit Admin</button>
+            </div>
+
+            <!-- Add Movie Section -->
+            <div class="card-bg rounded-2xl p-5 space-y-4">
+                <h3 class="font-bold border-b border-gray-800 pb-2 text-sm text-[#584cf4]">ADD NEW MOVIE</h3>
+                <form id="add-movie-form" class="space-y-3 text-sm">
+                    <input type="text" id="adm-movie-title" placeholder="Movie Title" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <input type="url" id="adm-movie-poster" placeholder="Poster Image URL" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <input type="url" id="adm-movie-video" placeholder="Video Stream URL (.mp4 format recommended)" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <input type="url" id="adm-movie-ad" placeholder="Adsterra Direct Link (Opens on Click)" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" step="0.1" id="adm-movie-rating" placeholder="Rating (e.g. 8.4)" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                        <input type="number" id="adm-movie-views" placeholder="Initial Views Count" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="adm-movie-timer" placeholder="Ad Wait Time (sec)" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                        <select id="adm-movie-category" class="bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                            <option value="Action">Action</option>
+                            <option value="Comedy">Comedy</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Horror">Horror</option>
+                            <option value="Crime">Crime</option>
+                            <option value="Animation">Animation</option>
+                            <option value="Web Series">Web Series</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="w-full purple-gradient py-3.5 rounded-xl font-semibold shadow-lg">Upload Content</button>
+                </form>
+            </div>
+
+            <!-- Add Banner Section -->
+            <div class="card-bg rounded-2xl p-5 space-y-4">
+                <h3 class="font-bold border-b border-gray-800 pb-2 text-sm text-[#584cf4]">ADD BANNER (SLIDER)</h3>
+                <form id="add-banner-form" class="space-y-3 text-sm">
+                    <input type="url" id="adm-banner-img" placeholder="Banner Image URL" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <input type="url" id="adm-banner-link" placeholder="Destination Redirect Link" required class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <button type="submit" class="w-full purple-gradient py-3.5 rounded-xl font-semibold shadow-lg">Publish Banner</button>
+                </form>
+            </div>
+
+            <!-- Profile Links Customization -->
+            <div class="card-bg rounded-2xl p-5 space-y-4">
+                <h3 class="font-bold border-b border-gray-800 pb-2 text-sm text-[#584cf4]">DASHBOARD PREFERENCES</h3>
+                <div class="space-y-3 text-sm">
+                    <input type="url" id="adm-pref-community" placeholder="Community Telegram/WhatsApp Link" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <input type="url" id="adm-pref-app" placeholder="App APK Download Link" class="w-full bg-[#110e20] border border-gray-800 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#584cf4]">
+                    <button onclick="updatePreferences()" class="w-full purple-gradient py-3.5 rounded-xl font-semibold shadow-lg">Update URLs</button>
+                </div>
+            </div>
+
+            <!-- Content Manager List -->
+            <div class="card-bg rounded-2xl p-5 space-y-4">
+                <h3 class="font-bold border-b border-gray-800 pb-2 text-sm text-red-400">DELETE BANNER/MOVIE CONTENT</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 mb-2">Banners Active</h4>
+                        <div id="adm-banners-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 mb-2">Movies Active</h4>
+                        <div id="adm-movies-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- DYNAMIC BOTTOM NAVIGATION BAR -->
+    <nav id="bottom-navbar" class="fixed bottom-0 left-0 right-0 h-[64px] bg-[#141026] border-t border-gray-800 flex items-center justify-around z-40">
+        <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center justify-center space-y-1 text-gray-500 active-tab transition-all">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-medium tracking-wide">Home</span>
+        </button>
+        <button onclick="switchTab('favorites')" id="nav-favorites" class="flex flex-col items-center justify-center space-y-1 text-gray-500 transition-all">
+            <i class="fa-solid fa-heart text-lg"></i>
+            <span class="text-[10px] font-medium tracking-wide">Favorites</span>
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center justify-center space-y-1 text-gray-500 transition-all">
+            <i class="fa-solid fa-user-gear text-lg"></i>
+            <span class="text-[10px] font-medium tracking-wide">Profile</span>
+        </button>
+    </nav>
+
+
+    <!-- GLOBAL JAVASCRIPT PROGRAMMING -->
+    <script>
+        /************************************************************************
+         * 1. FIREBASE CONFIGURATION
+         ************************************************************************/
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsp1GSjzQxC4AbMwQ2YRZvtUDEX_4j3Ts",
+            authDomain: "filmbox-315ac.firebaseapp.com",
+            projectId: "filmbox-315ac",
+            storageBucket: "filmbox-315ac.firebasestorage.app",
+            messagingSenderId: "1048892307284",
+            appId: "1:1048892307284:web:0ac206dad4b488e135bac1"
+        };
+
+        // Initialize Firebase Compatibility Mode
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        /************************************************************************
+         * 2. APPLICATION DATA STATE
+         ************************************************************************/
+        let banners = [];
+        let movies = [];
+        let preferences = { communityLink: '#', appLink: '#' };
+        let activeTab = 'home';
+        let currentUserId = null;
+        let currentUserData = null;
+        let localFavorites = JSON.parse(localStorage.getItem('filmbox_favs')) || [];
+        let currentBannerIndex = 0;
+        let bannerTimer = null;
+        let currentSelectedMovie = null;
+
+        /************************************************************************
+         * 3. INITIAL DEMO SEED DATA (Used when Firebase nodes are completely empty)
+         ************************************************************************/
+        const demoMovies = [
+            {
+                id: "demo-1",
+                title: "Shadow Warrior",
+                poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&q=80",
+                video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+                adLink: "https://www.google.com",
+                rating: 8.5,
+                views: 12430,
+                timer: 5,
+                category: "Action"
+            },
+            {
+                id: "demo-2",
+                title: "Midnight Mystery",
+                poster: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&q=80",
+                video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                adLink: "https://www.google.com",
+                rating: 7.9,
+                views: 8520,
+                timer: 8,
+                category: "Horror"
+            }
+        ];
+
+        const demoBanners = [
+            {
+                id: "banner-1",
+                img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1200&q=80",
+                link: "https://www.google.com"
+            }
+        ];
+
+        /************************************************************************
+         * 4. APP NAVIGATION & LAYOUT LOGIC
+         ************************************************************************/
+        function switchTab(tabId) {
+            activeTab = tabId;
+
+            // Hide all view screens
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            
+            // Show target view screen
+            document.getElementById(`${tabId}-view`).classList.remove('hidden');
+
+            // Manage bottom navbar highlighting
+            document.querySelectorAll('#bottom-navbar button').forEach(btn => {
+                btn.classList.remove('active-tab');
+                btn.querySelector('i').className = btn.querySelector('i').className.replace('fa-solid', 'fa-regular');
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active-tab');
+                activeBtn.querySelector('i').className = activeBtn.querySelector('i').className.replace('fa-regular', 'fa-solid');
+            }
+
+            // Scroll app-viewport container cleanly to the top instantly
+            document.getElementById('app-viewport').scrollTop = 0;
+            
+            // Show header only on Home screen as requested
+            const mainHeader = document.getElementById('main-header');
+            if (tabId === 'home') {
+                mainHeader.classList.remove('-translate-y-full');
+            } else {
+                mainHeader.classList.add('-translate-y-full');
+            }
+        }
+
+        // Auto-scroll logic for top Main Header inside Home Tab
+        let lastScrollTop = 0;
+        document.getElementById('app-viewport').addEventListener('scroll', function() {
+            if (activeTab !== 'home') return;
+            let st = this.scrollTop;
+            const mainHeader = document.getElementById('main-header');
+            if (st > lastScrollTop && st > 80) {
+                // Scroll down
+                mainHeader.classList.add('-translate-y-full');
+            } else {
+                // Scroll up
+                mainHeader.classList.remove('-translate-y-full');
+            }
+            lastScrollTop = st <= 0 ? 0 : st;
+        }, { passive: true });
+
+
+        /************************************************************************
+         * 5. FIREBASE USER AUTH CONTROLLERS
+         ************************************************************************/
+        // Tab switching UI inside Auth Screen
+        document.getElementById('tab-login').addEventListener('click', () => {
+            document.getElementById('tab-login').className = "flex-1 py-2 text-center font-semibold text-white border-b-2 border-[#584cf4]";
+            document.getElementById('tab-signup').className = "flex-1 py-2 text-center font-semibold text-gray-400 border-b-0";
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+        });
+
+        document.getElementById('tab-signup').addEventListener('click', () => {
+            document.getElementById('tab-signup').className = "flex-1 py-2 text-center font-semibold text-white border-b-2 border-[#584cf4]";
+            document.getElementById('tab-login').className = "flex-1 py-2 text-center font-semibold text-gray-400 border-b-0";
+            document.getElementById('signup-form').classList.remove('hidden');
+            document.getElementById('login-form').classList.add('hidden');
+        });
+
+        // Gmail format validation helper
+        function isGmailValid(email) {
+            const regex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+            return regex.test(email);
+        }
+
+        // Sign Up Handle
+        document.getElementById('signup-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+
+            if (!isGmailValid(email)) {
+                alert("Please enter a valid Gmail address (ending in @gmail.com).");
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    // Save additional data
+                    db.ref('users/' + user.uid).set({
+                        name: name,
+                        email: email
+                    });
+                    alert("Account created successfully!");
+                    document.getElementById('auth-screen').classList.add('hidden');
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        });
+
+        // Sign In Handle
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!isGmailValid(email)) {
+                alert("Only @gmail.com logins are supported.");
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    alert("Logged in successfully!");
+                    document.getElementById('auth-screen').classList.add('hidden');
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        });
+
+        // Skip Authentication Handle
+        document.getElementById('skip-auth-btn').addEventListener('click', () => {
+            document.getElementById('auth-screen').classList.add('hidden');
+            // Trigger guest setup
+            updateUserInfoUI(null);
+        });
+
+        // Logout Controller
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if (currentUserId) {
+                auth.signOut().then(() => {
+                    alert("Successfully logged out.");
+                    location.reload();
+                });
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        // Monitor Auth State
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUserId = user.uid;
+                db.ref('users/' + user.uid).once('value').then((snapshot) => {
+                    currentUserData = snapshot.val();
+                    updateUserInfoUI(currentUserData);
+                });
+            } else {
+                currentUserId = null;
+                currentUserData = null;
+                updateUserInfoUI(null);
+                // Prompt Login on first load if not skipped before
+                if(!sessionStorage.getItem('auth_skipped')) {
+                    document.getElementById('auth-screen').classList.remove('hidden');
+                    sessionStorage.setItem('auth_skipped', 'true');
+                }
+            }
+        });
+
+        function updateUserInfoUI(userData) {
+            const headerAvatar = document.getElementById('header-avatar');
+            const headerGreeting = document.getElementById('header-greeting');
+            const profileAvatar = document.getElementById('profile-avatar');
+            const profileUsername = document.getElementById('profile-username');
+            const profileEmail = document.getElementById('profile-email');
+            const logoutText = document.getElementById('logout-text');
+
+            if (userData) {
+                const firstLetter = userData.name ? userData.name.charAt(0).toUpperCase() : "U";
+                headerAvatar.textContent = firstLetter;
+                headerGreeting.textContent = `Hi, ${userData.name}`;
+                profileAvatar.textContent = firstLetter;
+                profileUsername.textContent = userData.name;
+                profileEmail.textContent = userData.email;
+                logoutText.textContent = "Sign Out Account";
+            } else {
+                headerAvatar.textContent = "G";
+                headerGreeting.textContent = "Hello, Guest";
+                profileAvatar.textContent = "?";
+                profileUsername.textContent = "Guest User";
+                profileEmail.textContent = "Sign up to synchronize favorites online.";
+                logoutText.textContent = "Login / Sign Up";
+            }
+        }
+
+
+        /************************************************************************
+         * 6. REALTIME SYNCHRONIZATION WITH FIREBASE
+         ************************************************************************/
+        // Sync Banners
+        db.ref('banners').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                banners = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            } else {
+                banners = demoBanners; // Seeding fallback
+            }
+            renderBanners();
+            renderAdminLists();
+        });
+
+        // Sync Movies
+        db.ref('movies').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                movies = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            } else {
+                movies = demoMovies; // Seeding fallback
+            }
+            renderMovies();
+            renderAdminLists();
+        });
+
+        // Sync Preferences
+        db.ref('preferences').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                preferences = data;
+                document.getElementById('link-community').href = preferences.communityLink || '#';
+                document.getElementById('link-app').href = preferences.appLink || '#';
+            }
+        });
+
+
+        /************************************************************************
+         * 7. FRONT-END RENDERING ENGINE (BANNERS, GRID AND DETAILS)
+         ************************************************************************/
+        // Render Top Dynamic Carousel
+        function renderBanners() {
+            const container = document.getElementById('banner-container');
+            const dotsContainer = document.getElementById('banner-dots');
+            container.innerHTML = '';
+            dotsContainer.innerHTML = '';
+
+            if (banners.length === 0) {
+                container.innerHTML = `<div class="absolute inset-0 bg-[#17132c] flex items-center justify-center text-sm text-gray-500">No Premium Banners</div>`;
+                return;
+            }
+
+            banners.forEach((b, index) => {
+                const slide = document.createElement('div');
+                slide.className = `absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${index === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0'}`;
+                slide.id = `banner-slide-${index}`;
+                slide.innerHTML = `
+                    <a href="${b.link}" target="_blank" class="block w-full h-full relative">
+                        <img src="${b.img}" alt="Banner Ads" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent flex items-end p-4">
+                            <span class="text-xs bg-[#584cf4] px-2.5 py-1 rounded-full font-bold">SPONSORED <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i></span>
+                        </div>
+                    </a>
+                `;
+                container.appendChild(slide);
+
+                const dot = document.createElement('button');
+                dot.className = `w-2 h-2 rounded-full transition-colors ${index === 0 ? 'bg-[#584cf4]' : 'bg-gray-600'}`;
+                dot.id = `banner-dot-${index}`;
+                dot.addEventListener('click', () => selectBanner(index));
+                dotsContainer.appendChild(dot);
+            });
+
+            currentBannerIndex = 0;
+            startBannerCarousel();
+        }
+
+        function selectBanner(index) {
+            const prevSlide = document.getElementById(`banner-slide-${currentBannerIndex}`);
+            const prevDot = document.getElementById(`banner-dot-${currentBannerIndex}`);
+            
+            currentBannerIndex = index;
+
+            const nextSlide = document.getElementById(`banner-slide-${currentBannerIndex}`);
+            const nextDot = document.getElementById(`banner-dot-${currentBannerIndex}`);
+
+            if (prevSlide) { prevSlide.classList.replace('opacity-100', 'opacity-0'); prevSlide.classList.replace('z-10', 'z-0'); }
+            if (prevDot) { prevDot.className = 'w-2 h-2 rounded-full bg-gray-600'; }
+
+            if (nextSlide) { nextSlide.classList.replace('opacity-0', 'opacity-100'); nextSlide.classList.replace('z-0', 'z-10'); }
+            if (nextDot) { nextDot.className = 'w-2 h-2 rounded-full bg-[#584cf4]'; }
+        }
+
+        function startBannerCarousel() {
+            clearInterval(bannerTimer);
+            if (banners.length <= 1) return;
+            bannerTimer = setInterval(() => {
+                let nextIdx = (currentBannerIndex + 1) % banners.length;
+                selectBanner(nextIdx);
+            }, 5000); // Transitions smoothly every 5 seconds [2]
+        }
+
+        // Filter Movies by Category selection
+        let activeCategory = 'All';
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.cat-btn').forEach(b => {
+                    b.className = "cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#17132c] text-gray-400 hover:text-white whitespace-nowrap transition-all";
+                });
+                this.className = "cat-btn px-5 py-2.5 rounded-full text-xs font-semibold bg-[#584cf4] text-white whitespace-nowrap transition-all";
+                activeCategory = this.getAttribute('data-category');
+                renderMovies();
+            });
+        });
+
+        // Main Movies Matrix Rendering (2-Column Grid) [2]
+        function renderMovies() {
+            const grid = document.getElementById('movies-grid');
+            grid.innerHTML = '';
+
+            const filteredMovies = activeCategory === 'All' 
+                ? movies 
+                : movies.filter(m => m.category === activeCategory);
+
+            if (filteredMovies.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center py-10 text-xs text-gray-500">No movies found in this library.</div>`;
+                return;
+            }
+
+            filteredMovies.forEach(m => {
+                const card = document.createElement('div');
+                card.className = "card-bg rounded-2xl overflow-hidden aspect-[3/4] flex flex-col justify-between p-2 shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all relative";
+                card.addEventListener('click', () => openMovieDetails(m));
+                card.innerHTML = `
+                    <div class="relative w-full h-[72%] rounded-xl overflow-hidden">
+                        <img src="${m.poster}" alt="${m.title}" class="w-full h-full object-cover">
+                        <!-- Tiny Overlay Info badge -->
+                        <div class="absolute top-2 left-2 bg-black/75 px-2 py-1 rounded-lg text-[10px] font-bold text-amber-400 flex items-center space-x-1">
+                            <i class="fa-solid fa-star"></i> <span>${Number(m.rating).toFixed(1)}</span>
+                        </div>
+                    </div>
+                    <div class="p-1 flex-1 flex flex-col justify-center">
+                        <h4 class="text-xs font-bold line-clamp-1 text-white">${m.title}</h4>
+                        <div class="flex items-center justify-between text-[10px] text-gray-400 mt-1">
+                            <span><i class="fa-solid fa-eye text-[#584cf4] mr-0.5"></i> ${formatViews(m.views)}</span>
+                            <span class="text-[9px] bg-white/5 px-2 py-0.5 rounded text-gray-300 font-semibold">${m.category}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Format Views Helper
+        function formatViews(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        // Launch Movie Details Frame
+        function openMovieDetails(movie) {
+            currentSelectedMovie = movie;
+            switchTab('details');
+
+            document.getElementById('details-poster').src = movie.poster;
+            document.getElementById('details-title').textContent = movie.title;
+            document.getElementById('details-rating').textContent = Number(movie.rating).toFixed(1);
+            document.getElementById('details-views').textContent = movie.views.toLocaleString();
+            document.getElementById('details-category-badge').textContent = movie.category;
+
+            // Manage Favorites Button Highlight
+            updateFavBtnUI(movie.id);
+
+            // Clean Previous Player instances
+            resetCustomPlayer();
+
+            // Set Action handlers
+            document.getElementById('watch-now-btn').onclick = () => launchAdTimer(movie);
+            document.getElementById('details-fav-btn').onclick = () => toggleFavorite(movie.id);
+            document.getElementById('details-share').onclick = () => shareMovieLink(movie);
+        }
+
+        // Toggle Favorites locally
+        function toggleFavorite(id) {
+            const idx = localFavorites.indexOf(id);
+            if (idx > -1) {
+                localFavorites.splice(idx, 1);
+                alert("Removed from favorites.");
+            } else {
+                localFavorites.push(id);
+                alert("Added to favorites.");
+            }
+            localStorage.setItem('filmbox_favs', JSON.stringify(localFavorites));
+            updateFavBtnUI(id);
+            renderFavorites();
+        }
+
+        function updateFavBtnUI(id) {
+            const btn = document.getElementById('details-fav-btn');
+            if (localFavorites.includes(id)) {
+                btn.className = "w-14 h-14 rounded-xl bg-[#584cf4] border border-[#584cf4] flex items-center justify-center text-white text-lg transition-colors";
+            } else {
+                btn.className = "w-14 h-14 rounded-xl bg-[#17132c] border border-gray-800 flex items-center justify-center text-gray-400 text-lg hover:text-red-500 transition-colors";
+            }
+        }
+
+        // Sharing Mechanism
+        function shareMovieLink(movie) {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${baseUrl}?movie=${movie.id}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("Success! Share link copied to clipboard.");
+            }).catch(() => {
+                alert("Error copying link, try copy address manually: " + shareUrl);
+            });
+        }
+
+
+        /************************************************************************
+         * 8. WATCH MECHANIC: ADSTERRA SPONSOR INTEGRATOR & COUNTDOWN
+         ************************************************************************/
+        function launchAdTimer(movie) {
+            // Step 1: Open Adsterra Direct Link [2]
+            window.open(movie.adLink, '_blank');
+
+            // Hide Watch Button, Show Countdown Overlay
+            document.getElementById('watch-now-btn').classList.add('hidden');
+            const timerOverlay = document.getElementById('ad-timer-overlay');
+            timerOverlay.classList.remove('hidden');
+
+            let countdown = parseInt(movie.timer) || 10;
+            const progress = document.getElementById('countdown-progress');
+            const numberText = document.getElementById('countdown-number');
+            numberText.textContent = `${countdown}s`;
+            progress.style.width = '0%';
+
+            let currentSecond = 0;
+            const interval = setInterval(() => {
+                currentSecond++;
+                let remaining = countdown - currentSecond;
+                numberText.textContent = `${remaining}s`;
+                
+                let percent = (currentSecond / countdown) * 100;
+                progress.style.width = `${percent}%`;
+
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    timerOverlay.classList.add('hidden');
+                    document.getElementById('watch-now-btn').classList.remove('hidden');
+                    
+                    // Increment Movie View on database after full ad views
+                    incrementMovieViews(movie.id);
+                    // Initialize and play Movie
+                    loadCustomVideoPlayer(movie.video);
+                }
+            }, 1000);
+        }
+
+        function incrementMovieViews(id) {
+            db.ref(`movies/${id}/views`).transaction((currentViews) => {
+                return (currentViews || 0) + 1;
+            });
+        }
+
+
+        /************************************************************************
+         * 9. CUSTOM HTML5 VIDEO PLAYER CONTROLS (2x hold, scrubbing, speed controls)
+         ************************************************************************/
+        const video = document.getElementById('main-video-element');
+        const playBtn = document.getElementById('vid-btn-play');
+        const muteBtn = document.getElementById('vid-btn-mute');
+        const volumeSlider = document.getElementById('vid-volume');
+        const progressSlider = document.getElementById('vid-progress');
+        const timeCur = document.getElementById('vid-time-current');
+        const timeDur = document.getElementById('vid-time-duration');
+        const fullscreenBtn = document.getElementById('vid-btn-fullscreen');
+        const speedBtn = document.getElementById('vid-btn-speed');
+        const speedOptions = document.getElementById('speed-options');
+        const touchOverlay = document.getElementById('video-touch-overlay');
+        const speedBadge = document.getElementById('speed-badge');
+
+        function loadCustomVideoPlayer(url) {
+            document.getElementById('video-player-container').classList.remove('hidden');
+            video.src = url;
+            video.load();
+            video.play();
+            playBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+            
+            // Auto-scroll screen down to player
+            setTimeout(() => {
+                document.getElementById('video-player-container').scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+
+        function resetCustomPlayer() {
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            document.getElementById('video-player-container').classList.add('hidden');
+            progressSlider.value = 0;
+            timeCur.textContent = "00:00";
+            timeDur.textContent = "00:00";
+        }
+
+        // Player Actions
+        playBtn.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+                playBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+            } else {
+                video.pause();
+                playBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+            }
+        });
+
+        // Time Updates
+        video.addEventListener('timeupdate', () => {
+            const current = video.currentTime;
+            const total = video.duration || 0;
+            progressSlider.value = total > 0 ? (current / total) * 100 : 0;
+            timeCur.textContent = formatTime(current);
+            timeDur.textContent = formatTime(total);
+        });
+
+        function formatTime(seconds) {
+            let m = Math.floor(seconds / 60);
+            let s = Math.floor(seconds % 60);
+            return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+        }
+
+        // Scrubbing Manual
+        progressSlider.addEventListener('input', () => {
+            const val = progressSlider.value;
+            const total = video.duration || 0;
+            video.currentTime = (val / 100) * total;
+        });
+
+        // Volume logic
+        volumeSlider.addEventListener('input', () => {
+            video.volume = volumeSlider.value;
+            if (video.volume === 0) {
+                muteBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
+            } else {
+                muteBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+            }
+        });
+
+        muteBtn.addEventListener('click', () => {
+            if (video.muted) {
+                video.muted = false;
+                muteBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+                volumeSlider.value = video.volume;
+            } else {
+                video.muted = true;
+                muteBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
+                volumeSlider.value = 0;
+            }
+        });
+
+        // Speed selector pop
+        speedBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            speedOptions.classList.toggle('hidden');
+        });
+
+        document.querySelectorAll('.speed-opt').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                const spd = parseFloat(opt.getAttribute('data-speed'));
+                video.playbackRate = spd;
+                speedBtn.textContent = `${spd}x`;
+                speedOptions.classList.add('hidden');
+            });
+        });
+
+        // Hide Speed menu on outer clicks
+        document.addEventListener('click', () => {
+            speedOptions.classList.add('hidden');
+        });
+
+        // Custom Fullscreen Mode [2]
+        fullscreenBtn.addEventListener('click', () => {
+            const container = document.getElementById('video-wrapper');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // LONG PRESS RIGHT SIDE -> 2.0x FAST FORWARD MECHANIC [2]
+        let holdTimer = null;
+        const rightTouchArea = document.getElementById('touch-right');
+
+        function start2xFastForward(e) {
+            e.preventDefault();
+            holdTimer = setTimeout(() => {
+                video.playbackRate = 2.0;
+                speedBadge.classList.remove('hidden');
+            }, 150); // Threshold to distinguish from simple taps
+        }
+
+        function end2xFastForward(e) {
+            clearTimeout(holdTimer);
+            video.playbackRate = 1.0;
+            speedBadge.classList.add('hidden');
+            speedBtn.textContent = "1.0x";
+        }
+
+        // Support both Desktop and Touch Devices natively
+        rightTouchArea.addEventListener('mousedown', start2xFastForward);
+        rightTouchArea.addEventListener('mouseup', end2xFastForward);
+        rightTouchArea.addEventListener('mouseleave', end2xFastForward);
+
+        rightTouchArea.addEventListener('touchstart', start2xFastForward, { passive: false });
+        rightTouchArea.addEventListener('touchend', end2xFastForward, { passive: false });
+
+
+        /************************************************************************
+         * 10. FAVORITES SEARCH & RENDER
+         ************************************************************************/
+        function renderFavorites() {
+            const grid = document.getElementById('favorites-grid');
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            grid.innerHTML = '';
+
+            let displayedMovies = movies;
+
+            // If searching, execute filter. If not searching, show only favorites
+            if (searchVal.length > 0) {
+                document.getElementById('favorites-title').textContent = "Search Results";
+                displayedMovies = movies.filter(m => m.title.toLowerCase().includes(searchVal));
+            } else {
+                document.getElementById('favorites-title').textContent = "My Saved List";
+                displayedMovies = movies.filter(m => localFavorites.includes(m.id));
+            }
+
+            if (displayedMovies.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center py-10 text-xs text-gray-500">No movies found here.</div>`;
+                return;
+            }
+
+            displayedMovies.forEach(m => {
+                const card = document.createElement('div');
+                card.className = "card-bg rounded-2xl overflow-hidden aspect-[3/4] flex flex-col justify-between p-2 shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all relative";
+                card.addEventListener('click', () => openMovieDetails(m));
+                card.innerHTML = `
+                    <div class="relative w-full h-[72%] rounded-xl overflow-hidden">
+                        <img src="${m.poster}" alt="${m.title}" class="w-full h-full object-cover">
+                        <div class="absolute top-2 left-2 bg-black/75 px-2 py-1 rounded-lg text-[10px] font-bold text-amber-400 flex items-center space-x-1">
+                            <i class="fa-solid fa-star"></i> <span>${Number(m.rating).toFixed(1)}</span>
+                        </div>
+                    </div>
+                    <div class="p-1 flex-1 flex flex-col justify-center">
+                        <h4 class="text-xs font-bold line-clamp-1 text-white">${m.title}</h4>
+                        <div class="flex items-center justify-between text-[10px] text-gray-400 mt-1">
+                            <span><i class="fa-solid fa-eye text-[#584cf4] mr-0.5"></i> ${formatViews(m.views)}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        document.getElementById('search-input').addEventListener('input', renderFavorites);
+
+
+        /************************************************************************
+         * 11. ADMIN MODULE (CRUD actions, preferences updating)
+         ************************************************************************/
+        function promptAdmin() {
+            const pass = prompt("Enter Admin Secure Passcode:");
+            if (pass === "1234") { // Default Passcode is '1234'
+                switchTab('admin');
+            } else {
+                alert("Incorrect Passcode! Access Denied.");
+            }
+        }
+
+        // Render admin configuration tools
+        function renderAdminLists() {
+            const bList = document.getElementById('adm-banners-list');
+            const mList = document.getElementById('adm-movies-list');
+
+            bList.innerHTML = '';
+            mList.innerHTML = '';
+
+            // Render delete action item for Banners
+            banners.forEach(b => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between bg-black/30 p-2.5 rounded-xl text-xs";
+                item.innerHTML = `
+                    <span class="truncate max-w-[70%]">${b.img}</span>
+                    <button onclick="deleteBanner('${b.id}')" class="text-red-500 font-semibold px-2 hover:opacity-80"><i class="fa-solid fa-trash"></i></button>
+                `;
+                bList.appendChild(item);
+            });
+
+            // Render delete action item for Movies
+            movies.forEach(m => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between bg-black/30 p-2.5 rounded-xl text-xs";
+                item.innerHTML = `
+                    <span class="truncate max-w-[70%]">${m.title}</span>
+                    <button onclick="deleteMovie('${m.id}')" class="text-red-500 font-semibold px-2 hover:opacity-80"><i class="fa-solid fa-trash"></i></button>
+                `;
+                mList.appendChild(item);
+            });
+        }
+
+        // DB Additions
+        document.getElementById('add-movie-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newMovie = {
+                title: document.getElementById('adm-movie-title').value.trim(),
+                poster: document.getElementById('adm-movie-poster').value.trim(),
+                video: document.getElementById('adm-movie-video').value.trim(),
+                adLink: document.getElementById('adm-movie-ad').value.trim(),
+                rating: parseFloat(document.getElementById('adm-movie-rating').value),
+                views: parseInt(document.getElementById('adm-movie-views').value),
+                timer: parseInt(document.getElementById('adm-movie-timer').value),
+                category: document.getElementById('adm-movie-category').value
+            };
+
+            db.ref('movies').push(newMovie).then(() => {
+                alert("New movie published successfully!");
+                document.getElementById('add-movie-form').reset();
+            });
+        });
+
+        document.getElementById('add-banner-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newBanner = {
+                img: document.getElementById('adm-banner-img').value.trim(),
+                link: document.getElementById('adm-banner-link').value.trim()
+            };
+
+            db.ref('banners').push(newBanner).then(() => {
+                alert("Banner published successfully!");
+                document.getElementById('add-banner-form').reset();
+            });
+        });
+
+        function updatePreferences() {
+            const community = document.getElementById('adm-pref-community').value.trim();
+            const app = document.getElementById('adm-pref-app').value.trim();
+
+            db.ref('preferences').set({
+                communityLink: community || '#',
+                appLink: app || '#'
+            }).then(() => {
+                alert("Preference URLs Updated!");
+            });
+        }
+
+        // DB Deletes
+        function deleteMovie(id) {
+            if (confirm("Are you sure you want to delete this content?")) {
+                db.ref(`movies/${id}`).remove().then(() => alert("Content Deleted."));
+            }
+        }
+
+        function deleteBanner(id) {
+            if (confirm("Are you sure you want to delete this banner?")) {
+                db.ref(`banners/${id}`).remove().then(() => alert("Banner Deleted."));
+            }
+        }
+
+
+        /************************************************************************
+         * 12. INITIALIZATION ROUTINE & URL SEARCH FOR SHARING
+         ************************************************************************/
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check for direct deep-link sharing parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetMovieId = urlParams.get('movie');
+
+            // Force dynamic load sync check
+            db.ref('movies').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    movies = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                } else {
+                    movies = demoMovies;
+                }
+                
+                // If deep link parameter is active, load target movie details screen directly
+                if (targetMovieId) {
+                    const target = movies.find(m => m.id === targetMovieId);
+                    if (target) {
+                        openMovieDetails(target);
+                        return;
+                    }
+                }
+                
+                // Default fallback
+                switchTab('home');
+            });
+        });
+    </script>
+</body>
+</html>
